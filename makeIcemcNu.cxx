@@ -34,13 +34,13 @@ using namespace std;
 int main(int argc, char *argv[]){
 
   if(!(argc==3)){
-    std::cerr << "Usage 1: " << argv[0] << " [run] [exponent]" << std::endl;
+    std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent]" << std::endl;
     return 1;
   }
 
   std::cout << argv[0] << "\t" << argv[1];
   std::cout << std::endl;
-  Int_t irun = atoi(argv[1]);
+  Int_t isimrun = atoi(argv[1]);
   string iexp = argv[2];
 
   AnitaVersion::set(3);
@@ -59,19 +59,29 @@ int main(int argc, char *argv[]){
 
   // DATA STUFF
   string anita3dataFolder="/unix/anita3/flight1415/root/";
-  
-  TFile *dHeadFile  = new TFile(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun), "read");
-  TFile *dEventFile = new TFile(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun), "read");
 
-  TTree *dHeadTree  = (TTree*) dHeadFile->Get("headTree");
-  TTree *dEventTree = (TTree*) dEventFile->Get("eventTree");
+  TChain *dHeadChain  = new TChain("headTree");
+  TChain *dEventChain = new TChain("eventTree");
+  for (int irun=130; irun<439; irun++){
+    if (irun>256 && irun<264) continue;
+    dHeadChain->Add(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun));
+    dEventChain->Add(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun));
+  }
 
-  dHeadTree->SetBranchAddress("header", &dataHeaderPtr);
-  dEventTree->SetBranchAddress("event", &dataCalEvPtr);
-  
+  // TFile *dHeadFile  = new TFile(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun), "read");
+  // TFile *dEventFile = new TFile(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun), "read");
+
+  // TTree *dHeadTree  = (TTree*) dHeadFile->Get("headTree");
+  // TTree *dEventTree = (TTree*) dEventFile->Get("eventTree");
+
+  dHeadChain->SetBranchAddress("header", &dataHeaderPtr);
+  dEventChain->SetBranchAddress("event", &dataCalEvPtr);
+  dHeadChain ->BuildIndex("realTime" );
+  dEventChain->BuildIndex("eventNumber");
+
   // SIMULATION STUFF
 
-  string simDataFolder = "/unix/anita3/linda/SimulatedFiles/Test10/SignalOnly/Energy_E";
+  string simDataFolder = "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/SignalOnly/Energy_E";
   simDataFolder += iexp;
 
   TChain *simHeadChain  = new TChain("headTree"       );
@@ -79,13 +89,11 @@ int main(int argc, char *argv[]){
   TChain *simGpsChain   = new TChain("adu5PatTree"    );
   TChain *simTruthChain = new TChain("truthAnitaTree" );
   
-  for (int isimrun=1; isimrun<11; isimrun++){
-    simHeadChain ->Add(Form("%s/run%i/SimulatedAnitaHeadFile%i.root",   simDataFolder.c_str(), isimrun, isimrun ));
-    simEventChain->Add(Form("%s/run%i/SimulatedAnitaEventFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ));
-    simGpsChain  ->Add(Form("%s/run%i/SimulatedAnitaGpsFile%i.root",    simDataFolder.c_str(), isimrun, isimrun ));
-    simTruthChain->Add(Form("%s/run%i/SimulatedAnitaTruthFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ));
-  }
 
+  simHeadChain ->Add(Form("%s/run%i/SimulatedAnitaHeadFile%i.root",   simDataFolder.c_str(), isimrun, isimrun ));
+  simEventChain->Add(Form("%s/run%i/SimulatedAnitaEventFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ));
+  simGpsChain  ->Add(Form("%s/run%i/SimulatedAnitaGpsFile%i.root",    simDataFolder.c_str(), isimrun, isimrun ));
+  simTruthChain->Add(Form("%s/run%i/SimulatedAnitaTruthFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ));
   
   simHeadChain ->SetBranchAddress("header", &simHeaderPtr );
   simEventChain->SetBranchAddress("event",  &simEvPtr     );
@@ -94,7 +102,7 @@ int main(int argc, char *argv[]){
 
   simEventChain->SetBranchAddress("weight", &weight       );
 
-  simHeadChain ->BuildIndex("realTime"   );
+  //  simHeadChain ->BuildIndex("realTime"   );
   simEventChain->BuildIndex("eventNumber");
   simGpsChain  ->BuildIndex("eventNumber");
   simTruthChain->BuildIndex("eventNumber");
@@ -102,10 +110,10 @@ int main(int argc, char *argv[]){
 
   // OUTPUT STUFF
 
-  string run_no = Form("%i", irun);
+  string run_no = Form("%i", isimrun);
 
 
-  string outputdir="/unix/anita3/linda/SimulatedFiles/Test10/SignalOnly/MinBiasEnergy_E";
+  string outputdir="/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/MinBiasEnergy_E";
   outputdir += iexp;
 
   outputdir += "/run"+run_no+"/";
@@ -115,7 +123,7 @@ int main(int argc, char *argv[]){
 
   TTree *eventTree = new TTree("eventTree", "eventTree");
   eventTree->Branch("event",             &simEvPtr            );
-  eventTree->Branch("run",               &irun,     "run/I"   );
+  eventTree->Branch("run",               &isimrun,     "run/I"   );
   eventTree->Branch("weight",            &weight,   "weight/D");
 
   outputAnitaFile =outputdir+"SimulatedAnitaHeadFile"+run_no+".root";
@@ -140,33 +148,36 @@ int main(int argc, char *argv[]){
   TTree *truthAnitaTree = new TTree("truthAnitaTree", "Truth Anita Tree");
   truthAnitaTree->Branch("truth",     &truthEvPtr                   );
 
-  Int_t nEntries = dHeadTree->GetEntries();
+  Int_t nEntries = simHeadChain->GetEntries();
 
-  Int_t fNumPoints  = 260;
-  Int_t fNumChans   = 96;
+  Int_t fNumPoints  = NUM_SAMP;
+  Int_t fNumChans   = NUM_DIGITZED_CHANNELS;
 
-  for (int ientry=0;ientry<nEntries;ientry+=20000){
+  for (int ientry=0;ientry<nEntries;ientry++){
 
-    dHeadTree->GetEntry(ientry);
-
-    // only use min bias triggers
-    while ((dataHeaderPtr->trigType & (1<<0))>0 ){
-      ientry++;
-      dHeadTree->GetEntry(ientry);
-    }
-
-    dEventTree->GetEntry(ientry);
-    if (dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
-      cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << endl;
-    }
-
-    dataEvPtr = new UsefulAnitaEvent(dataCalEvPtr, WaveCalType::kDefault);
-
-    int newInd = simHeadChain->GetEntryNumberWithBestIndex(dataHeaderPtr->realTime);
+    simHeadChain->GetEntry(ientry);
+    int newInd = dHeadChain->GetEntryNumberWithBestIndex(simHeaderPtr->realTime);
     if (newInd<0){
       cout << "Index not found, skipping event " << endl;
       continue;
     }
+    dHeadChain->GetEntry(newInd);
+    
+
+    // only use min bias triggers
+    while ((dataHeaderPtr->trigType & (1<<0))>0 ){
+      newInd++;
+      dHeadChain->GetEntry(newInd);
+    }
+
+    dEventChain->GetEntryWithIndex(dataHeaderPtr->eventNumber);
+    if (dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
+      cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << " . Skipping this event."<< endl;
+      continue;
+    }
+
+    dataEvPtr = new UsefulAnitaEvent(dataCalEvPtr, WaveCalType::kDefault);
+
 
     simHeadChain->GetEntry(newInd);   
     
