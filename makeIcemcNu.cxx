@@ -195,7 +195,7 @@ int main(int argc, char *argv[]){
       for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
 	double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
     	simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
-	simEvPtr->fTimes[i][j] =  dataEvPtr->fTimes[ichan][ipoint];
+	simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
 	//    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
       }
       delete graphUp;
