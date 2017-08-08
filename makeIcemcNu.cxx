@@ -189,10 +189,17 @@ int main(int argc, char *argv[]){
 
 
     for (int ichan = 0; ichan < fNumChans; ichan++){
+      TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
+      TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
+      
       for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
-    	//    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
-    	simEvPtr->fVolts[ichan][ipoint]+=dataEvPtr->fVolts[ichan][ipoint];
+	double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
+    	simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
+	simEvPtr->fTimes[i][j] =  dataEvPtr->fTimes[ichan][ipoint];
+	//    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
       }
+      delete graphUp;
+      delete gtemp;
     }
     
     simGpsChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
