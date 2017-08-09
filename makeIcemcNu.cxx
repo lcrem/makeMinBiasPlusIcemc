@@ -33,16 +33,23 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 
-  if(!(argc==3)){
-    std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent]" << std::endl;
+  Int_t isimrun;
+  string iexp;
+  string simDataFolder;
+  
+  if((argc!=3)&&(argc!=4)){
+    std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent] ([simfolder])" << std::endl;
     return 1;
-  }
-
+  } else {
   std::cout << argv[0] << "\t" << argv[1];
   std::cout << std::endl;
-  Int_t isimrun = atoi(argv[1]);
-  string iexp = argv[2];
+  isimrun = atoi(argv[1]);
+  iexp += argv[2];
+  if (argc==4) simDataFolder += argv[3];
+  else  simDataFolder += "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/SignalOnly/Energy_E";
+  }
 
+  
   AnitaVersion::set(3);
 
 
@@ -81,7 +88,6 @@ int main(int argc, char *argv[]){
 
   // SIMULATION STUFF
 
-  string simDataFolder = "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/SignalOnly/Energy_E";
   simDataFolder += iexp;
 
   TChain *simHeadChain  = new TChain("headTree"       );
