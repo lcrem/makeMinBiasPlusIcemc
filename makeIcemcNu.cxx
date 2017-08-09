@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 
   Int_t isimrun;
   string iexp;
-  string simDataFolder;
+  string baseDir;
   
   if((argc!=3)&&(argc!=4)){
     std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent] ([simfolder])" << std::endl;
@@ -45,11 +45,12 @@ int main(int argc, char *argv[]){
   std::cout << std::endl;
   isimrun = atoi(argv[1]);
   iexp += argv[2];
-  if (argc==4) simDataFolder += argv[3];
-  else  simDataFolder += "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/SignalOnly/Energy_E";
+  if (argc==4) baseDir += argv[3];
+  else  baseDir += "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/";
   }
 
-  
+  string simDataFolder = baseDir + "/SignalOnly/Energy_E";
+  string outputdir= baseDir + "/MinBiasEnergy_E";
   AnitaVersion::set(3);
 
 
@@ -118,8 +119,6 @@ int main(int argc, char *argv[]){
 
   string run_no = Form("%i", isimrun);
 
-
-  string outputdir="/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/MinBiasEnergy_E";
   outputdir += iexp;
 
   outputdir += "/run"+run_no+"/";
@@ -159,6 +158,8 @@ int main(int argc, char *argv[]){
   Int_t fNumPoints  = NUM_SAMP;
   Int_t fNumChans   = NUM_DIGITZED_CHANNELS;
 
+  AnitaGeomTool *fGeomTool = AnitaGeomTool::Instance();
+
   for (int ientry=0;ientry<nEntries;ientry++){
 
     simHeadChain->GetEntry(ientry);
@@ -193,19 +194,27 @@ int main(int argc, char *argv[]){
     simEventChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
     cout << simHeaderPtr->eventNumber << " " << simEvPtr->eventNumber << endl;
 
-
+    int tsurf, tchan;
     for (int ichan = 0; ichan < fNumChans; ichan++){
-      TGraph *gtemp = new TGraph (fNumPoints, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
-      TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
+      fGeomTool->getSurfChanFromChanIndex(ichan, tsurf, tchan);
+      if (tchan!=8) { // if it's not the clock
+	TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
+	TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
       
-      for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
-	double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
-    	simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
-	simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
-	//    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
+	for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
+	  double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
+	  simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
+	  simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
+	  //    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
+	}
+	delete graphUp;
+	delete gtemp;
+      } else { // if it's the clock
+	for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
+	  simEvPtr->fVolts[ichan][ipoint] =  dataEvPtr->fVolts[ichan][ipoint];
+	  simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
+	}
       }
-      delete graphUp;
-      delete gtemp;
     }
     
     simGpsChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
