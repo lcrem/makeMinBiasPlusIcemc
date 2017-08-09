@@ -195,7 +195,7 @@ int main(int argc, char *argv[]){
 
 
     for (int ichan = 0; ichan < fNumChans; ichan++){
-      TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
+      TGraph *gtemp = new TGraph (fNumPoints, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
       TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
       
       for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
