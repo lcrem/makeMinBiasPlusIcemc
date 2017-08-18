@@ -186,9 +186,10 @@ int main(int argc, char *argv[]){
     dataEvPtr = new UsefulAnitaEvent(dataCalEvPtr, WaveCalType::kDefault);
 
 
-    simHeadChain->GetEntry(newInd);   
-    
+    simHeadChain->GetEntry(newInd);       
 
+    if (truth->weight<0.000001) continue;
+    
     cout << dataHeaderPtr->realTime << " " << simHeaderPtr->realTime << " " << (dataHeaderPtr->realTime -simHeaderPtr->realTime) <<  endl;
  
     simEventChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
@@ -197,6 +198,9 @@ int main(int argc, char *argv[]){
     int tsurf, tchan;
     for (int ichan = 0; ichan < fNumChans; ichan++){
       fGeomTool->getSurfChanFromChanIndex(ichan, tsurf, tchan);
+
+      fNumPoints = dataEvPts->fNumPoints[ichan];
+      
       if (tchan!=8) { // if it's not the clock
 	TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
 	TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
