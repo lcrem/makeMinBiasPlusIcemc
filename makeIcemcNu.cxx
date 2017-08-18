@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
   simGpsChain  ->SetBranchAddress("pat",    &simGpsPtr    );
   simTruthChain->SetBranchAddress("truth",  &truthEvPtr   );
 
-  simEventChain->SetBranchAddress("weight", &weight       );
+  simHeadChain->SetBranchAddress("weight", &weight       );
 
   //  simHeadChain ->BuildIndex("realTime"   );
   simEventChain->BuildIndex("eventNumber");
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]){
 
     simHeadChain->GetEntry(newInd);       
 
-    if (truth->weight<0.000001) continue;
+    if (weight<0.000001) continue;
     
     cout << dataHeaderPtr->realTime << " " << simHeaderPtr->realTime << " " << (dataHeaderPtr->realTime -simHeaderPtr->realTime) <<  endl;
  
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]){
     for (int ichan = 0; ichan < fNumChans; ichan++){
       fGeomTool->getSurfChanFromChanIndex(ichan, tsurf, tchan);
 
-      fNumPoints = dataEvPts->fNumPoints[ichan];
+      fNumPoints = dataEvPtr->fNumPoints[ichan];
       
       if (tchan!=8) { // if it's not the clock
 	TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
