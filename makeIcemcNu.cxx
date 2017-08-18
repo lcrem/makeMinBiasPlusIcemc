@@ -6,6 +6,7 @@
 #include "Adu5Pat.h"
 #include "TimedAnitaHeader.h"
 #include "PrettyAnitaHk.h"
+#include "AnalysisWaveform.h"
 #include "ProgressBar.h"
 #include "RawAnitaHeader.h"
 #include "FFTtools.h"
@@ -158,6 +159,9 @@ int main(int argc, char *argv[]){
   Int_t fNumPoints  = NUM_SAMP;
   Int_t fNumChans   = NUM_DIGITZED_CHANNELS;
 
+  int tsurf, tchan;
+  double simValue;
+  
   AnitaGeomTool *fGeomTool = AnitaGeomTool::Instance();
 
   for (int ientry=0;ientry<nEntries;ientry++){
@@ -195,30 +199,34 @@ int main(int argc, char *argv[]){
     simEventChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
     cout << simHeaderPtr->eventNumber << " " << simEvPtr->eventNumber << endl;
 
-    int tsurf, tchan;
     for (int ichan = 0; ichan < fNumChans; ichan++){
       fGeomTool->getSurfChanFromChanIndex(ichan, tsurf, tchan);
 
       fNumPoints = dataEvPtr->fNumPoints[ichan];
       
       if (tchan!=8) { // if it's not the clock
-	TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
-	TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
+
+	AnalysisWaveform wf(simEvPtr->fNumPoints[ichan], simEvPtr->fVolts[ichan], 1./2.6, simEvPtr->fTimes[ichan][0]);
+	wf.padFreq(10);
+	// TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
+	// TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
       
 	for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
-	  double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
+	  //	  double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
+	  simValue = wf.evalEven(dataEvPtr->fTimes[ichan][ipoint]);
 	  simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
 	  simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
 	  //    	cout <<  dataEvPtr->fTimes[ichan][ipoint] << " " << dataEvPtr->fVolts[ichan][ipoint] << endl;
 	}
-	delete graphUp;
-	delete gtemp;
+	// delete graphUp;
+	// delete gtemp;
       } else { // if it's the clock
 	for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
 	  simEvPtr->fVolts[ichan][ipoint] =  dataEvPtr->fVolts[ichan][ipoint];
 	  simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
 	}
       }
+      simEvPtr->fNumPoints[ichan] = fNumPoints;
     }
     
     simGpsChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
