@@ -73,15 +73,10 @@ int main(int argc, char *argv[]){
   TChain *dEventChain = new TChain("eventTree");
   for (int irun=130; irun<439; irun++){
     if (irun>256 && irun<264) continue;
-    dHeadChain->Add(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun));
-    dEventChain->Add(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun));
+    dHeadChain->Add(Form("%s/run%i/minBiasHeadFile%i.root", anita3dataFolder.c_str(), irun, irun));
+    dEventChain->Add(Form("%s/run%i/minBiasEventFile%i.root",             anita3dataFolder.c_str(), irun, irun));
   }
 
-  // TFile *dHeadFile  = new TFile(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun), "read");
-  // TFile *dEventFile = new TFile(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun), "read");
-
-  // TTree *dHeadTree  = (TTree*) dHeadFile->Get("headTree");
-  // TTree *dEventTree = (TTree*) dEventFile->Get("eventTree");
 
   dHeadChain->SetBranchAddress("header", &dataHeaderPtr);
   dEventChain->SetBranchAddress("event", &dataCalEvPtr);
@@ -175,11 +170,11 @@ int main(int argc, char *argv[]){
     dHeadChain->GetEntry(newInd);
     
 
-    // only use min bias triggers
-    while ((dataHeaderPtr->trigType & (1<<0))>0 ){
-      newInd++;
-      dHeadChain->GetEntry(newInd);
-    }
+    // // only use min bias triggers
+    // while ((dataHeaderPtr->trigType & (1<<0))>0 ){
+    //   newInd++;
+    //   dHeadChain->GetEntry(newInd);
+    // }
 
     dEventChain->GetEntryWithIndex(dataHeaderPtr->eventNumber);
     if (dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
