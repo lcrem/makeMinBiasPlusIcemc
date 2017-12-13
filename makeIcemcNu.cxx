@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
   else  baseDir += "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/";
   }
 
-  string simDataFolder = baseDir + "/SignalOnly/Energy_E";
+  string simDataFolder = baseDir + "/Energy_";
   string outputdir= baseDir + "/MinBiasEnergy_E";
   AnitaVersion::set(3);
 
