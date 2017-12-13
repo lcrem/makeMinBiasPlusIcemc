@@ -110,7 +110,7 @@ int main(int argc, char *argv[]){
   simGpsChain  ->BuildIndex("eventNumber");
   simTruthChain->BuildIndex("eventNumber");
 
-  TFile *_fTruth = new TTree(Form("%s/run%i/SimulatedAnitaTruthFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ), "read");
+  TFile *_fTruth = new TFile(Form("%s/run%i/SimulatedAnitaTruthFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ), "read");
   TTree *configAnitaTreeInput      = (TTree*)_fTruth->Get("configAnitaTree");
   TTree *triggerSettingsTreeInput  = (TTree*)_fTruth->Get("triggerSettingsTree");
   //_fTruth->Close();
