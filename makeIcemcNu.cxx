@@ -110,6 +110,10 @@ int main(int argc, char *argv[]){
   simGpsChain  ->BuildIndex("eventNumber");
   simTruthChain->BuildIndex("eventNumber");
 
+  TFile *_fTruth = new TTree(Form("%s/run%i/SimulatedAnitaTruthFile%i.root",  simDataFolder.c_str(), isimrun, isimrun ), "read");
+  TTree *configAnitaTreeInput      = (TTree*)_fTruth->Get("configAnitaTree");
+  TTree *triggerSettingsTreeInput  = (TTree*)_fTruth->Get("triggerSettingsTree");
+  //_fTruth->Close();
 
   // OUTPUT STUFF
 
@@ -193,7 +197,8 @@ int main(int argc, char *argv[]){
  
     simEventChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
     cout << simHeaderPtr->eventNumber << " " << simEvPtr->eventNumber << endl;
-
+    simTruthChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
+    
     for (int ichan = 0; ichan < fNumChans; ichan++){
       fGeomTool->getSurfChanFromChanIndex(ichan, tsurf, tchan);
 
@@ -201,7 +206,7 @@ int main(int argc, char *argv[]){
       
       if (tchan!=8) { // if it's not the clock
 
-	AnalysisWaveform wf(simEvPtr->fNumPoints[ichan], simEvPtr->fVolts[ichan], 1./2.6, simEvPtr->fTimes[ichan][0]);
+	AnalysisWaveform wf(simEvPtr->fNumPoints[ichan], truthEvPtr->fSignalAtDigitizer[ichan], 1./2.6, truthEvPtr->fTimes[ichan][0]);
 	wf.padFreq(10);
 	// TGraph *gtemp = new TGraph (260, simEvPtr->fTimes[ichan], simEvPtr->fVolts[ichan]);
 	// TGraph *graphUp = FFTtools::getInterpolatedGraph(gtemp, 1./(2.6*40));
@@ -225,7 +230,6 @@ int main(int argc, char *argv[]){
     }
     
     simGpsChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
-    simTruthChain->GetEntryWithIndex(simHeaderPtr->eventNumber);
     
     
     truthAnitaTree->Fill();
@@ -259,7 +263,13 @@ int main(int argc, char *argv[]){
   delete anitafileGps;
 
   anitafileTruth->cd();
+  
+  TTree *configAnitaTreeOutput = configAnitaTreeInput->CloneTree(-1,"fast");
+  configAnitaTreeOutput->Write("configAnitaTree");
   truthAnitaTree->Write("truthAnitaTree");
+  TTree *triggerSettingsTreeOutput = triggerSettingsTreeInput->CloneTree(-1, "fast");
+  triggerSettingsTreeOutput->Write("triggerSettingsTree");
+  
   anitafileTruth->Close();
   delete anitafileTruth;
 
