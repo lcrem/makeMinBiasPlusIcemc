@@ -37,22 +37,24 @@ int main(int argc, char *argv[]){
   Int_t isimrun;
   string iexp;
   string baseDir;
+  int whichanita;
   
-  if((argc!=3)&&(argc!=4)){
-    std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent] ([simfolder])" << std::endl;
+  if((argc!=5)){
+    std::cerr << "Usage 1: " << argv[0] << " [simrun] [exponent] [simfolder] [whichanita]" << std::endl;
     return 1;
-  } else {
+  } 
+
   std::cout << argv[0] << "\t" << argv[1];
   std::cout << std::endl;
   isimrun = atoi(argv[1]);
   iexp += argv[2];
-  if (argc==4) baseDir += argv[3];
-  else  baseDir += "/unix/anita3/linda/SimulatedFiles/2017Jul07/anita3/";
-  }
+  baseDir += argv[3];
+  whichanita = atoi(argv[4]);
+
 
   string simDataFolder = baseDir + "/Energy_";
   string outputdir= baseDir + "/MinBiasEnergy_E";
-  AnitaVersion::set(3);
+  AnitaVersion::set(whichanita);
 
 
   RawAnitaHeader*       simHeaderPtr  = NULL;
@@ -67,12 +69,26 @@ int main(int argc, char *argv[]){
   double weight;
 
   // DATA STUFF
-  string anita3dataFolder="/unix/anita3/flight1415/root/";
-
+  string anita3dataFolder;
+  int minrun, maxrun;
+  int skip1, skip2;
+  if (whichanita==3){
+    minrun=130;
+    maxrun=439;
+    skip1 = 256;
+    skip2 = 264;
+    anita3dataFolder+="/unix/anita3/flight1415/root/";
+  }else if (whichanita==4){
+    minrun=41;
+    maxrun=367;
+    skip1=59;
+    skip2=62;
+    anita3dataFolder+="/unix/anita4/flight2016/root/";
+  }
   TChain *dHeadChain  = new TChain("headTree");
   TChain *dEventChain = new TChain("eventTree");
-  for (int irun=130; irun<439; irun++){
-    if (irun>256 && irun<264) continue;
+  for (int irun=minrun; irun<maxrun; irun++){
+    if (irun>skip1 && irun<skip2) continue;
     dHeadChain->Add(Form("%s/run%i/minBiasHeadFile%i.root", anita3dataFolder.c_str(), irun, irun));
     dEventChain->Add(Form("%s/run%i/minBiasEventFile%i.root",             anita3dataFolder.c_str(), irun, irun));
   }
@@ -182,7 +198,7 @@ int main(int argc, char *argv[]){
 
     dEventChain->GetEntryWithIndex(dataHeaderPtr->eventNumber);
     if (dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
-      cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << " . Skipping this event."<< endl;
+      cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << " . Skipping this event."<< endl;
       continue;
     }
 
@@ -213,6 +229,7 @@ int main(int argc, char *argv[]){
       
 	for (int ipoint = 0; ipoint < fNumPoints; ipoint++){
 	  //	  double simValue = graphUp->Eval(dataEvPtr->fTimes[ichan][ipoint]);
+
 	  simValue = wf.evalEven(dataEvPtr->fTimes[ichan][ipoint]);
 	  simEvPtr->fVolts[ichan][ipoint] = simValue + dataEvPtr->fVolts[ichan][ipoint];
 	  simEvPtr->fTimes[ichan][ipoint] =  dataEvPtr->fTimes[ichan][ipoint];
