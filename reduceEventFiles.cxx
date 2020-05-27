@@ -3,6 +3,7 @@
 #include "UsefulAnitaEvent.h"
 #include "CalibratedAnitaEvent.h"
 #include "RawAnitaEvent.h"
+#include "AnitaDataset.h"
 #include "Adu5Pat.h"
 #include "TimedAnitaHeader.h"
 #include "PrettyAnitaHk.h"
@@ -35,65 +36,100 @@ using namespace std;
 int main(int argc, char *argv[]){
 
   Int_t irun;
-
-  if((argc!=2)){
-    std::cerr << "Usage : " << argv[0] << " [run]" << std::endl;
+  int whichanita=0;
+  if((argc!=3)){
+    std::cerr << "Usage : " << argv[0] << " [whichanita] [run]" << std::endl;
     return 1;
   } else {
-    std::cout << argv[0] << "\t" << argv[1];
+    std::cout << argv[0] << "\t" << argv[1] << "\t" << argv[2];
     std::cout << std::endl;
-    irun = atoi(argv[1]);
+    whichanita = atoi(argv[1]);
+    irun = atoi(argv[2]);
+    if (whichanita!=3 && whichanita!=4) return -1;
   }
 
-  AnitaVersion::set(3);
+  if (whichanita==3 && irun>256 && irun<264) return -1;
 
+  // AnitaVersion::set(whichanita);
 
-  RawAnitaHeader*       dataHeaderPtr = NULL;
-  CalibratedAnitaEvent* dataCalEvPtr  = NULL;
+  // RawAnitaHeader*       dataHeaderPtr = NULL;
+  // CalibratedAnitaEvent* dataCalEvPtr  = NULL;
+  // RawAnitaEvent*        dataRawEvPtr  = NULL;
 
+  string anitadataFolder="";
   // DATA STUFF
   string anita3dataFolder="/unix/anita3/flight1415/root/";
-
-  TChain *dHeadChain  = new TChain("headTree");
-  TChain *dEventChain = new TChain("eventTree");
-  if (irun>256 && irun<264) return -1;
-  dHeadChain->Add(Form("%s/run%i/timedHeadFile%iOfflineMask.root", anita3dataFolder.c_str(), irun, irun));
-  dEventChain->Add(Form("%s/run%i/calEventFile%i.root",             anita3dataFolder.c_str(), irun, irun));
-
+  string anita4dataFolder="/unix/anita4/flight2016/root/";
   
-  dHeadChain->SetBranchAddress("header", &dataHeaderPtr);
-  dEventChain->SetBranchAddress("event", &dataCalEvPtr);
-  dHeadChain ->BuildIndex("realTime" );
-  dEventChain->BuildIndex("eventNumber");
+  if (whichanita==3) anitadataFolder+=anita3dataFolder;
+  else if (whichanita==4) anitadataFolder+=anita4dataFolder;
+
+
+  AnitaDataset d(irun);
+
+  // TChain *dHeadChain  = new TChain("headTree");
+  // TChain *dEventChain = new TChain("eventTree");
+
+  // dHeadChain->Add(Form("%s/run%i/timedHeadFile%i.root",       anitadataFolder.c_str(), irun, irun));
+  // if (whichanita==3){
+  //   dEventChain->Add(Form("%s/run%i/calEventFile%i.root",       anitadataFolder.c_str(), irun, irun));
+  // } else if (whichanita==4){
+  //   dEventChain->Add(Form("%s/run%i/eventFile%i.root",       anitadataFolder.c_str(), irun, irun));
+  // }
+
+  // dHeadChain->SetBranchAddress("header", &dataHeaderPtr);
+  // if (whichanita==3)  dEventChain->SetBranchAddress("event", &dataCalEvPtr);
+  // else if (whichanita==4)   dEventChain->SetBranchAddress("event", &dataRawEvPtr);
+  // dHeadChain ->BuildIndex("realTime" );
+  // dEventChain->BuildIndex("eventNumber");
 
   // OUTPUT STUFF
 
-  TFile *anitafileEvent = new TFile(Form("%s/run%i/minBiasEventFile%i.root", anita3dataFolder.c_str(), irun, irun), "RECREATE");
+  TFile *anitafileEvent = new TFile(Form("%s/run%i/minBiasEventFile%i.root", anitadataFolder.c_str(), irun, irun), "RECREATE");
 
   TTree *eventTree = new TTree("eventTree", "eventTree");
-  eventTree->Branch("event",             &dataCalEvPtr            );
+  //  eventTree->Branch("event",             &dataCalEvPtr            );
+  eventTree->Branch("event",             d.calibrated()            );
 
-  TFile *anitafileHead = new TFile(Form("%s/run%i/minBiasHeadFile%i.root", anita3dataFolder.c_str(), irun, irun), "RECREATE");
+  TFile *anitafileHead = new TFile(Form("%s/run%i/minBiasHeadFile%i.root", anitadataFolder.c_str(), irun, irun), "RECREATE");
 
   TTree *headTree = new TTree("headTree", "headTree");
-  headTree->Branch("header",  &dataHeaderPtr           );
+  //  headTree->Branch("header",  &dataHeaderPtr           );
+  headTree->Branch("header",  d.header()           );
 
-  Int_t nEntries = dHeadChain->GetEntries();
+  Int_t nEntries = d.N();
 
   for (int ientry=0;ientry<nEntries;ientry++){
 
-    dHeadChain->GetEntry(ientry);
-    
-    // only use min bias triggers
-    if ((dataHeaderPtr->trigType & (1<<0))>0 ) continue;   
+    d.getEntry(ientry);
 
-    dEventChain->GetEntry(ientry);
+    if ( d.header()->getTriggerBitRF()>0 ) continue;
 
-    if (dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
-      cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << " . Skipping this event."<< endl;
+    if (d.header()->eventNumber!=d.calibrated()->eventNumber){
+      cout << d.header()->eventNumber << " " << d.calibrated()->eventNumber << endl;
       continue;
     }
+    // dHeadChain->GetEntry(ientry);
+    
+    // // only use min bias triggers
+    // if ((dataHeaderPtr->trigType & (1<<0))>0 ) continue;   
 
+    // dEventChain->GetEntry(ientry);
+
+    // if (whichanita==3 && dataHeaderPtr->eventNumber != dataCalEvPtr->eventNumber){
+    //   cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataCalEvPtr->eventNumber << " . Skipping this event."<< endl;
+    //   continue;
+    // }
+
+    // if (whichanita==4){
+    //   if (dataHeaderPtr->eventNumber != dataRawEvPtr->eventNumber){
+    // 	cout << "Something is wrong here " << dataHeaderPtr->eventNumber << " " << dataRawEvPtr->eventNumber << " . Skipping this event."<< endl;
+    // 	continue;
+    //   }
+    //   UsefulAnitaEvent *dataUsefulEvPtr = new UsefulAnitaEvent(dataRawEvPtr, WaveCalType::kNoCalib);
+    //   dataCalEvPtr = new CalibratedAnitaEvent(dataUsefulEvPtr);
+    //   delete dataUsefulEvPtr;
+    // }
     eventTree->Fill();
     headTree->Fill();
 

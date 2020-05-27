@@ -45,6 +45,13 @@ endif()
 find_package(ROOT REQUIRED COMPONENTS MathMore MathCore RIO Hist Tree Net Minuit Minuit2 TreePlayer)
 message("ROOT_INCLUDE_DIRS is set to ${ROOT_INCLUDE_DIRS}")
 
+
+message("cmake_cxx_flags = ${CMAKE_CXX_FLAGS}")
+message("cmake_cxx_flags default = ${CMAKE_CXX_FLAGS_DEFAULT}")
+
+
+
+
 include_directories(${PROJECT_SOURCE_DIR} ${ROOT_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include ${FFTW_INCLUDES} ${ZLIB_INCLUDES} ${UTIL_INC_DIR})
 add_definitions(${ROOT_CXX_FLAGS})
 link_directories(${UTIL_LIB_DIR})
